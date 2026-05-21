@@ -1,5 +1,6 @@
 package br.unipar.frameworks.controller;
 
+import br.unipar.frameworks.config.JwtService;
 import br.unipar.frameworks.dto.LoginRequest;
 import br.unipar.frameworks.dto.LoginResponse;
 import br.unipar.frameworks.dto.RegisterRequest;
@@ -19,11 +20,14 @@ public class AuthController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public AuthController(UserRepository userRepository,
-                          PasswordEncoder passwordEncoder) {
+                          PasswordEncoder passwordEncoder,
+                          JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/register")
@@ -43,13 +47,16 @@ public class AuthController {
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         return userRepository.findByEmail(request.email())
                 .filter(user -> passwordEncoder.matches(request.password(), user.getPassword()))
-                .<ResponseEntity<?>>map(user -> ResponseEntity.ok(
-                        new LoginResponse(
-                                "Login realizado para laboratório",
-                                "TOKEN-" + user.getId() + "-" + user.getRole(),
-                                UserMapper.toResponse(user)
-                        )
-                ))
+                .<ResponseEntity<?>>map(user -> {
+                    String token = jwtService.generateToken(user.getEmail(), user.getRole());
+                    return ResponseEntity.ok(
+                            new LoginResponse(
+                                    "Login realizado com sucesso",
+                                    token, // 👈 JWT real
+                                    UserMapper.toResponse(user)
+                            )
+                    );
+                })
                 .orElseGet(() -> ResponseEntity.status(401).body(Map.of(
                         "error", "Email ou senha inválidos"
                 )));

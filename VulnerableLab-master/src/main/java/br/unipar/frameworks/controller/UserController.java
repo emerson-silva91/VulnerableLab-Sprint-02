@@ -47,8 +47,9 @@ public class UserController {
 
     @GetMapping("/search-unsafe")
     public List<UserResponse> unsafeSearch(@RequestParam String term) {
-        String jpql = "select u from User u where lower(u.name) like lower('%" + term + "%')";
+        String jpql = "select u from User u where lower(u.name) like lower(:term)";
         return entityManager.createQuery(jpql, User.class)
+                .setParameter("term", "%" + term + "%")
                 .getResultList()
                 .stream()
                 .map(UserMapper::toResponse)
