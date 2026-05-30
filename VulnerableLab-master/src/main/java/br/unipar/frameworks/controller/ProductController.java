@@ -3,6 +3,9 @@ package br.unipar.frameworks.controller;
 import br.unipar.frameworks.model.Product;
 import br.unipar.frameworks.repository.ProductRepository;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
 
@@ -17,8 +20,8 @@ public class ProductController {
     }
 
     @GetMapping
-    public List<Product> listProducts() {
-        return productRepository.findAll();
+    public Page<Product> listProducts(@PageableDefault(size = 10) Pageable pageable) {
+        return productRepository.findAll(pageable);
     }
 
     @PostMapping

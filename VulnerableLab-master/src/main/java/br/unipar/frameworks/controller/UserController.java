@@ -7,8 +7,12 @@ import br.unipar.frameworks.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
@@ -23,12 +27,9 @@ public class UserController {
         this.userRepository = userRepository;
     }
 
-    @GetMapping
-    public List<UserResponse> listUsers() {
-        return userRepository.findAll()
-                .stream()
-                .map(UserMapper::toResponse)
-                .toList();
+    public Page<UserResponse> listUsers(@PageableDefault(size = 10) Pageable pageable) {
+        return userRepository.findAll(pageable)
+                .map(UserMapper::toResponse);
     }
 
     @GetMapping("/{id}")
@@ -38,17 +39,22 @@ public class UserController {
     }
 
     @GetMapping("/search-safe")
-    public List<UserResponse> safeSearch(@RequestParam String term) {
-        return userRepository.safeSearchByName(term)
+    public Page<UserResponse> safeSearch(@RequestParam String term,
+                                         @PageableDefault(size = 10) Pageable pageable) {
+        return userRepository.safeSearchByName(term, pageable)
                 .stream()
                 .map(UserMapper::toResponse)
-                .toList();
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> new org.springframework.data.domain.PageImpl<>(list, pageable, list.size())
+                ));
     }
 
     @GetMapping("/search-unsafe")
     public List<UserResponse> unsafeSearch(@RequestParam String term) {
-        String jpql = "select u from User u where lower(u.name) like lower('%" + term + "%')";
+        String jpql = "select u from User u where lower(u.name) like lower(:term)";
         return entityManager.createQuery(jpql, User.class)
+                .setParameter("term", "%" + term + "%")
                 .getResultList()
                 .stream()
                 .map(UserMapper::toResponse)

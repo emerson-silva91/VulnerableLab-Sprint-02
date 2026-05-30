@@ -6,6 +6,9 @@ import br.unipar.frameworks.model.Product;
 import br.unipar.frameworks.repository.CommentRepository;
 import br.unipar.frameworks.repository.ProductRepository;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 
 import java.util.List;
 
@@ -22,8 +25,9 @@ public class CommentController {
     }
 
     @GetMapping("/product/{productId}")
-    public List<Comment> listByProduct(@PathVariable Long productId) {
-        return commentRepository.findByProductId(productId);
+    public Page<Comment> listByProduct(@PathVariable Long productId,
+                                       @PageableDefault(size = 10) Pageable pageable) {
+        return commentRepository.findByProductId(productId, pageable);
     }
 
     @PostMapping
